@@ -7,13 +7,15 @@ const rateLimit = require("express-rate-limit");
 // Crée une limitation en cas de tentatives trop nombreuses
 // Va protéger l'API des attaques brute force
 const limitation = rateLimit({
-    windowMs: 5 * 60 * 1000, // 5 minutes
-    max: 5, // Limite à 3 tentatives par adresse IP
-    message:
-      "Nombre de requêtes abusives détectées , attendez 5 minutes avant nouvel essai",
-  });
+  windowMs: 5 * 60 * 1000, // 5 minutes
+  max: 5, // Limite à 3 tentatives par adresse IP
+  message:
+    "Nombre de requêtes abusives détectées , attendez 5 minutes avant nouvel essai",
+});
 
 // Gestion des différentes routes (accès) utilisateurs
-router.post("/", userController.registerNewUser);
+router.post("/signup", userController.registerNewUser);
+router.post("/login", userController.loginUser);
+router.get("/:id", userController.getOneUser);
 
 module.exports = router;

@@ -1,11 +1,13 @@
 const mongoose = require("mongoose");
 
 function connectDatabase(app) {
-  const dbConnectionUrl = process.env.DB_CONNECT || "tonURLDeBaseDeDonnées";
+  const dbConnectionUrl = process.env.DB_CONNECT;
 
   mongoose
     .connect(dbConnectionUrl)
-    .then(() => console.log("Base de données connectée !"))
+    .then(() => {
+      console.log("Base de données connectée !");
+    })
     .catch((err) =>
       console.error("Erreur de connexion à la base de données", err)
     );
