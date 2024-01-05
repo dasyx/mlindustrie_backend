@@ -16,6 +16,14 @@ const userSchema = mongoose.Schema({
     type: String,
     required: [true, "Please Include a valid password"],
   },
+  isAdmin: {
+    type: Boolean,
+    default: false,
+  },
+  confirmationToken: {
+    type: String,
+    isConfirmed: { type: Boolean, default: false },
+  },
 });
 const User = mongoose.model("User", userSchema);
 module.exports = User;

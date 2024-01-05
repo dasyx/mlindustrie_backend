@@ -1,39 +1,82 @@
-// Utilisation de l'algorithme bcrypt pour hasher le mot de passe des utilisateurs
 const bcrypt = require("bcrypt");
 let User = require("./model");
 let mailer = require("../config/mailer");
+const jwt = require("jsonwebtoken");
 
-// Middleware qui gère l'enregistrement d'un nouvel utilisateur dans la base de données
-// Et lui envoie un mail de bienvenue
-
-//  USER SIGNUP  //
-exports.registerNewUser = (req, res, next) => {
-  // On appelle la méthode hash de bcrypt qui sera la fonction de cryptage de mot de passe
-  // On va lui passer le mdp du corps de la requête passé par le frontend
-  // le "salt" correspond de fois on execute l'algorythme de hashage, soit 10 fois ici
+exports.registerNewUser = async (req, res) => {
   try {
-    let addedUser;
-    bcrypt.hash(req.body.password, 10).then((hash) => {
-      const user = new User({
-        name: req.body.name,
-        phone: req.body.phone,
-        email: req.body.email,
-        password: hash,
-      });
-      addedUser = user.save();
-      if (addedUser) {
-        mailer.welcomeMail(req.body.email, req.body.name);
-      }
+    const hashedPassword = await bcrypt.hash(req.body.password, 10);
+    const confirmationToken = jwt.sign(
+      { email: req.body.email },
+      process.env.CONFIRM_TOKEN,
+      { expiresIn: "1d" }
+    );
+
+    const user = new User({
+      name: req.body.name,
+      phone: req.body.phone,
+      email: req.body.email,
+      password: hashedPassword,
+      confirmationToken: confirmationToken,
+      isConfirmed: false,
+    });
+
+    const addedUser = await user.save();
+    if (addedUser) {
+      const confirmationUrl = `http://localhost:3000/confirm/${confirmationToken}`;
+      mailer.welcomeMail(user.email, user.name, confirmationUrl);
       res.status(201).json({
-        msg: "Bienvenue chez Mlindustrie !",
+        message: "Please check your email to confirm your registration.",
         data: addedUser,
       });
-    });
+    } else {
+      res.status(400).json({ message: "Error adding user" });
+    }
   } catch (err) {
-    console.log(err);
-    res.status(500).json({
-      error: err,
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// USER CONFIRMATION
+
+exports.confirmUser = async (req, res) => {
+  try {
+    // Retrieve token from URL parameters
+    const token = req.params.token;
+
+    // Decode the JWT token
+    const decoded = jwt.verify(token, process.env.CONFIRM_TOKEN);
+
+    // Find the user with the decoded email and token
+    const user = await User.findOne({
+      email: decoded.email,
+      confirmationToken: token,
     });
+
+    if (user) {
+      // Check if user is already confirmed
+      if (user.isConfirmed) {
+        return res.status(400).send("User already confirmed.");
+      }
+
+      // Update user's confirmation status
+      user.isConfirmed = true;
+      user.confirmationToken = ""; // Clear the confirmation token
+
+      // Save the updated user
+      await user.save();
+
+      // Respond with a success message
+      return res.status(200).send("User successfully confirmed.");
+    } else {
+      // Respond with a user not found error
+      return res.status(404).send("User not found or token is invalid.");
+    }
+  } catch (error) {
+    // Log the error and respond with 500 Internal Server Error
+    console.error(error);
+    return res.status(500).json({ error: error.message });
   }
 };
 
@@ -43,25 +86,46 @@ exports.loginUser = async (req, res) => {
     // Trouver l'utilisateur par email
     const user = await User.findOne({ email: req.body.email });
     if (user) {
+      // Vérifier si l'utilisateur a confirmé son email
+      if (!user.isConfirmed) {
+        return res.status(401).json({
+          msg: "Veuillez confirmer votre email avant de vous connecter.",
+        });
+      }
+
       // Comparer les mots de passe
-      bcrypt.compare(req.body.password, user.password, (err, result) => {
+      bcrypt.compare(req.body.password, user.password, async (err, result) => {
         if (err) {
           return res.status(401).json({
             msg: "Authentification échouée",
           });
         }
         if (result) {
+          // L'utilisateur est authentifié, créer un token de session
+          const token = jwt.sign(
+            {
+              email: user.email,
+              userId: user._id,
+            },
+            process.env.SESSION_SECRET, // Clé secrète pour le token de session
+            {
+              expiresIn: "1h", // Expirer dans 1 heure par exemple
+            }
+          );
+
           return res.status(200).json({
             msg: "Authentification réussie",
+            token: token, // Renvoyer le token au client
             user: {
               email: user.email,
               // Vous pouvez ajouter plus de champs ici selon vos besoins
             },
           });
+        } else {
+          res.status(401).json({
+            msg: "Mot de passe incorrect",
+          });
         }
-        res.status(401).json({
-          msg: "Authentification échouée",
-        });
       });
     } else {
       res.status(404).json({ msg: "Utilisateur non trouvé" });

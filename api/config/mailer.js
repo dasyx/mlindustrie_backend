@@ -1,6 +1,7 @@
 const nodemailer = require("nodemailer");
 const hbs = require("nodemailer-express-handlebars");
 
+// Configuring nodemailer transporter
 let transporter = nodemailer.createTransport({
   service: "hotmail",
   host: "smtp-mail.outlook.com",
@@ -10,9 +11,11 @@ let transporter = nodemailer.createTransport({
     pass: process.env.OUTLOOK_PASSWORD,
   },
   tls: {
-    rejectUnauthorized: false,
+    rejectUnauthorized: true, // Change to true in production for better security
   },
 });
+
+// Configuring Handlebars options
 const handlebarOptions = {
   viewEngine: {
     extName: ".handlebars",
@@ -24,15 +27,20 @@ const handlebarOptions = {
   extName: ".handlebars",
 };
 
-exports.welcomeMail = (email, name) =>
-  transporter.sendMail({
-    from: "dasyx66@hotmail.fr",
-    to: email,
-    subject: "Création de compte MLindustrie",
-    template: "bienvenue",
+// Applying Handlebars options to transporter
+transporter.use("compile", hbs(handlebarOptions));
+
+// Function to send welcome email
+exports.welcomeMail = (email, name, confirmationUrl) => {
+  // Sending email using nodemailer
+  return transporter.sendMail({
+    from: process.env.OUTLOOK_EMAIL, // Using environment variable for sender email
+    to: email, // User's email
+    subject: "Création de compte MLindustrie", // Email subject
+    template: "bienvenue", // Handlebars template name
     context: {
-      user: name,
+      user: name, // Passing user name to the template
+      confirmationUrl: confirmationUrl, // Passing confirmation URL to the template
     },
   });
-
-transporter.use("compile", hbs(handlebarOptions));
+};
