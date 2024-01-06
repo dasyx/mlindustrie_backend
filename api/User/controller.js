@@ -36,33 +36,47 @@ exports.registerNewUser = async (req, res) => {
   }
 };
 
-// USER LOGIN //
+// USER LOGIN
 exports.loginUser = async (req, res) => {
-  const { email } = req.body;
-  // Check we have an email
-  if (!email) {
+  const { email, password } = req.body; // Ajouter password dans la destructuration
+  // Vérifier que l'email et le mot de passe sont fournis
+  if (!email || !password) {
     return res.status(422).send({
-      message: "Missing email.",
+      message: "Missing email or password.",
     });
   }
+
   try {
-    // Step 1 - Verify a user with the email exists
+    // Étape 1 - Vérifier qu'un utilisateur avec cet email existe
     const user = await User.findOne({ email }).exec();
     if (!user) {
       return res.status(404).send({
-        message: "User does not exists",
+        message: "User does not exist",
       });
     }
-    // Step 2 - Ensure the account has been verified
+
+    // Étape 2 - Vérifier que le compte a été vérifié
     if (!user.verified) {
       return res.status(403).send({
-        message: "Verify your Account.",
+        message: "Please verify your account.",
       });
     }
+
+    // Étape 3 - Comparer le mot de passe fourni avec le mot de passe haché
+    const match = await bcrypt.compare(password, user.password);
+    if (!match) {
+      return res.status(401).send({
+        message: "Password is incorrect", // ou utilisez un message plus général pour éviter de donner trop d'informations
+      });
+    }
+
+    // Étape 4 - Si tout est bon, envoyer une réponse de succès
     return res.status(200).send({
-      message: "User logged in",
+      message: "User logged in successfully",
+      // Vous pouvez également générer et envoyer un jeton de session ici si vous utilisez l'authentification basée sur les jetons
     });
   } catch (err) {
+    console.error(err);
     return res.status(500).send(err);
   }
 };
