@@ -6,22 +6,22 @@ const mongoose = require("mongoose");
 
 // USER REGISTRATION
 
-exports.registerNewUser = async (req, res) => {
+exports.signup = async (req, res) => {
   try {
-    const hashedPassword = await bcrypt.hash(req.body.password, 10);
+    //const hashedPassword = await bcrypt.hash(req.body.password, 10);
 
     const user = await new User({
-      _id: new mongoose.Types.ObjectId(),
+      //_id: new mongoose.Types.ObjectId(),
       name: req.body.name,
-      phone: req.body.phone,
+      //phone: req.body.phone,
       email: req.body.email,
-      password: hashedPassword,
+      //password: hashedPassword,
     });
 
     const addedUser = user.save();
     if (addedUser) {
       const verificationToken = user.generateVerificationToken();
-      const confirmationUrl = `http://localhost:3000/confirm/${verificationToken}`;
+      const confirmationUrl = `http://localhost:3000/user/confirm/${verificationToken}`;
       mailer.welcomeMail(user.email, user.name, confirmationUrl);
       res.status(201).json({
         message: "Please check your email to confirm your registration.",
@@ -37,7 +37,7 @@ exports.registerNewUser = async (req, res) => {
 };
 
 // USER LOGIN
-exports.loginUser = async (req, res) => {
+exports.login = async (req, res) => {
   const { email, password } = req.body; // Ajouter password dans la destructuration
   // Vérifier que l'email et le mot de passe sont fournis
   if (!email || !password) {
@@ -83,7 +83,7 @@ exports.loginUser = async (req, res) => {
 
 // USER CONFIRMATION
 
-exports.confirmUser = async (req, res) => {
+exports.confirm = async (req, res) => {
   const { token } = req.params;
   // Check we have an id
   if (!token) {
