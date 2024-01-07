@@ -5,12 +5,12 @@ const userSchema = mongoose.Schema({
   _id: mongoose.Schema.Types.ObjectId,
   name: {
     type: String,
-    required: [true, "Please Include your name"],
+    required: [true, "Veuillez saisir votre nom"],
     unique: true,
   },
   email: {
     type: String,
-    required: [true, "Please Include your email"],
+    required: [true, "Veuillez saisir votre adresse email"],
     unique: true,
   },
   phone: {
@@ -19,7 +19,7 @@ const userSchema = mongoose.Schema({
   },
   password: {
     type: String,
-    required: [true, "Please Include a valid password"],
+    required: [true, "Veuillez saisir votre mot de passe"],
   },
   isAdmin: {
     type: Boolean,
@@ -36,7 +36,7 @@ userSchema.methods.generateVerificationToken = function () {
   const user = this;
   const verificationToken = jwt.sign(
     { ID: user._id },
-    process.env.SESSION_SECRET,
+    process.env.CONFIRM_TOKEN,
     { expiresIn: "7d" }
   );
   return verificationToken;

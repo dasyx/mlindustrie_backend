@@ -49,21 +49,31 @@ exports.login = async (req, res) => {
     });
   }
   try {
-    // Step 1 - Verify a user with the email exists
+    // Verify a user with the email exists
     const user = await User.findOne({ email }).exec();
     if (!user) {
       return res.status(404).send({
-        message: "User does not exists",
+        message: "User does not exist",
       });
     }
-    // Step 2 - Ensure the account has been verified
+    // Ensure the account has been verified
     if (!user.verified) {
       return res.status(403).send({
         message: "Verify your Account.",
       });
     }
+    // Create token
+    const token = jwt.sign(
+      { userId: user._id },
+      process.env.SESSION_TOKEN, // Ensure you have a JWT_SECRET in your environment variables
+      { expiresIn: "24h" } // Token expires in 24 hours
+    );
+    // Display token in the console
+    console.log(token);
+    // Send back token
     return res.status(200).send({
       message: "User logged in",
+      token,
     });
   } catch (err) {
     return res.status(500).send(err);
@@ -84,7 +94,7 @@ exports.confirm = async (req, res) => {
   // Step 1 -  Verify the token from the URL
   let payload = null;
   try {
-    payload = jwt.verify(token, process.env.SESSION_SECRET);
+    payload = jwt.verify(token, process.env.CONFIRM_TOKEN);
   } catch (err) {
     return res.status(500).send(err);
   }
