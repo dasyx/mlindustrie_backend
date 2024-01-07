@@ -32,6 +32,7 @@ transporter.use("compile", hbs(handlebarOptions));
 
 // Function to send welcome email
 exports.welcomeMail = (email, name, confirmationUrl) => {
+  console.log(`Sending confirmation URL: ${confirmationUrl}`); // Logging the URL
   // Sending email using nodemailer
   return transporter.sendMail({
     from: process.env.OUTLOOK_EMAIL, // Using environment variable for sender email

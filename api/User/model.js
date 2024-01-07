@@ -2,14 +2,16 @@ const mongoose = require("mongoose");
 const jwt = require("jsonwebtoken");
 
 const userSchema = mongoose.Schema({
-  //_id: mongoose.Schema.Types.ObjectId,
+  _id: mongoose.Schema.Types.ObjectId,
   name: {
     type: String,
-    //required: [true, "Please Include your name"],
+    required: [true, "Please Include your name"],
+    unique: true,
   },
   email: {
     type: String,
     required: [true, "Please Include your email"],
+    unique: true,
   },
   phone: {
     type: String,
@@ -17,7 +19,7 @@ const userSchema = mongoose.Schema({
   },
   password: {
     type: String,
-    //required: [true, "Please Include a valid password"],
+    required: [true, "Please Include a valid password"],
   },
   isAdmin: {
     type: Boolean,

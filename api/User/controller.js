@@ -6,22 +6,25 @@ const mongoose = require("mongoose");
 
 // USER REGISTRATION
 
+// User registration
 exports.signup = async (req, res) => {
   try {
-    //const hashedPassword = await bcrypt.hash(req.body.password, 10);
+    const hashedPassword = await bcrypt.hash(req.body.password, 10);
 
     const user = await new User({
-      //_id: new mongoose.Types.ObjectId(),
+      _id: new mongoose.Types.ObjectId(),
       name: req.body.name,
       //phone: req.body.phone,
       email: req.body.email,
-      //password: hashedPassword,
+      password: hashedPassword,
     });
 
     const addedUser = user.save();
+    const verificationToken = user.generateVerificationToken();
+    const confirmationUrl = `http://localhost:3000/user/confirm/${verificationToken}`;
+    console.log(`Generated confirmation URL: ${confirmationUrl}`); // Logging the URL
+
     if (addedUser) {
-      const verificationToken = user.generateVerificationToken();
-      const confirmationUrl = `http://localhost:3000/user/confirm/${verificationToken}`;
       mailer.welcomeMail(user.email, user.name, confirmationUrl);
       res.status(201).json({
         message: "Please check your email to confirm your registration.",
@@ -36,54 +39,41 @@ exports.signup = async (req, res) => {
   }
 };
 
-// USER LOGIN
+// User login
 exports.login = async (req, res) => {
-  const { email, password } = req.body; // Ajouter password dans la destructuration
-  // Vérifier que l'email et le mot de passe sont fournis
-  if (!email || !password) {
+  const { email } = req.body;
+  // Check we have an email
+  if (!email) {
     return res.status(422).send({
-      message: "Missing email or password.",
+      message: "Missing email.",
     });
   }
-
   try {
-    // Étape 1 - Vérifier qu'un utilisateur avec cet email existe
+    // Step 1 - Verify a user with the email exists
     const user = await User.findOne({ email }).exec();
     if (!user) {
       return res.status(404).send({
-        message: "User does not exist",
+        message: "User does not exists",
       });
     }
-
-    // Étape 2 - Vérifier que le compte a été vérifié
+    // Step 2 - Ensure the account has been verified
     if (!user.verified) {
       return res.status(403).send({
-        message: "Please verify your account.",
+        message: "Verify your Account.",
       });
     }
-
-    // Étape 3 - Comparer le mot de passe fourni avec le mot de passe haché
-    const match = await bcrypt.compare(password, user.password);
-    if (!match) {
-      return res.status(401).send({
-        message: "Password is incorrect", // ou utilisez un message plus général pour éviter de donner trop d'informations
-      });
-    }
-
-    // Étape 4 - Si tout est bon, envoyer une réponse de succès
     return res.status(200).send({
-      message: "User logged in successfully",
-      // Vous pouvez également générer et envoyer un jeton de session ici si vous utilisez l'authentification basée sur les jetons
+      message: "User logged in",
     });
   } catch (err) {
-    console.error(err);
     return res.status(500).send(err);
   }
 };
 
-// USER CONFIRMATION
-
+// User confirmation
 exports.confirm = async (req, res) => {
+  // Log the parameters received to debug
+  console.log("Received params:", req.params);
   const { token } = req.params;
   // Check we have an id
   if (!token) {
