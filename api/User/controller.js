@@ -21,7 +21,7 @@ exports.signup = async (req, res) => {
 
     const addedUser = user.save();
     const verificationToken = user.generateVerificationToken();
-    const confirmationUrl = `http://localhost:3000/user/confirm/${verificationToken}`;
+    const confirmationUrl = `http://localhost:8080/confirm/${verificationToken}`;
     console.log(`Generated confirmation URL: ${confirmationUrl}`); // Logging the URL
 
     if (addedUser) {
@@ -72,8 +72,9 @@ exports.login = async (req, res) => {
     console.log(token);
     // Send back token
     return res.status(200).send({
-      message: "User logged in",
+      message: "Utilisateur connecté",
       token,
+      id: user._id,
     });
   } catch (err) {
     return res.status(500).send(err);
@@ -110,7 +111,7 @@ exports.confirm = async (req, res) => {
     user.verified = true;
     await user.save();
     return res.status(200).send({
-      message: "Account Verified",
+      message: "Compte vérifié, vous pouvez maintenant vous connecter.",
     });
   } catch (err) {
     return res.status(500).send(err);

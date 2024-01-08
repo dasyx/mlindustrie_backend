@@ -15,7 +15,8 @@ const limitation = rateLimit({
 
 // Gestion des différentes routes (accès) utilisateurs
 router.post("/signup", userController.signup);
-router.post("/login", userController.login);
 router.get("/confirm/:token", userController.confirm);
+router.post("/login", userController.login);
+router.get("/:id", userController.getOneUser);
 
 module.exports = router;
